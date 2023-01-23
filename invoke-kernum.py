@@ -3,7 +3,6 @@
 import sys
 from colorama import Fore, Back, Style 
 import subprocess 
-import requests
 import os 
 
 
