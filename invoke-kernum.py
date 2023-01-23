@@ -59,7 +59,7 @@ print(Style.RESET_ALL)
 domain = sys.argv[1]
 
 if len(sys.argv) != 2:
-    print("Please enter a valid and userlist to run the script")
+    print("Please enter a valid domain to run the script")
     print("Format: exploit.py domain.local")
     sys.exit(5)
 	
