@@ -39,7 +39,7 @@ def invokeKerbrute():
     		for line in file_in:
         		lines.append(line)
 	for l in lines:
-		print("\nAttacking: " + domain + " using " + l)s
+		print("\nAttacking: " + domain + " using " + l)
 		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + '>> valid_users.txt' )
 
 def invokeFormat():
@@ -51,7 +51,7 @@ def invokeFormat():
 	print(Fore.RED + "\nCheck userlist and remove faulty users!")
 	print(Style.RESET_ALL)
 	os.system("cat valid_users.txt" +  " |  cut -f1 -d" + "@" + " | tee userlist")
-
+	os.system("""sed -i 's/NAME://' userlist""")
 printBanner() 
 print(Style.RESET_ALL)
 
