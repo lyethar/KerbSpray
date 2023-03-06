@@ -43,11 +43,10 @@ def invokeKerbrute():
 		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + '>> valid_users.txt' )
 
 def invokeFormat():
-	os.system("""cat valid_users.txt | cut -d "      " -f2 > valid_users2.txt""")
-	os.system("""cat valid_users2.txt | tr -d "[:blank:]" > valid_users3.txt""")
+	os.system("""cat valid_users.txt | cut -d " " -f14 > valid_users2.txt""")
 	print(Fore.RED + "\nCheck userlist and remove faulty users!")
 	print(Style.RESET_ALL)
-	os.system("cat valid_users3.txt" +  " |  cut -f1 -d" + "@" + " | tee userlist")
+	os.system("cat valid_users2.txt" +  " |  cut -f1 -d" + "@" + " | tee userlist")
 printBanner() 
 print(Style.RESET_ALL)
 
