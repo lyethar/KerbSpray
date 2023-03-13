@@ -38,11 +38,14 @@ def invokeKerbrute():
     		lines = []
     		for line in file_in:
         		lines.append(line)
-	for l in lines:
+	outputlist = ['a', 'b', 'c', 'd', 'e']
+	for l, o in zip(range(len(lines)), outputlist):
 		print("\nAttacking: " + domain + " using " + l)
-		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + " -o valid_users.txt" )
+		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + " -o " + o'.txt' )
 
 def invokeFormat():
+	outputlist2 = ['a.txt', 'b.txt' , 'c.txt' , 'd.txt' , 'e.txt']
+	#for e in outputlist2:
 	os.system("""cat valid_users.txt | cut -d " " -f8 > valid_users2.txt""")
 	print(Fore.RED + "\nCheck userlist and remove faulty users!")
 	print(Style.RESET_ALL)
