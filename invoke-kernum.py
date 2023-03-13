@@ -40,7 +40,7 @@ def invokeKerbrute():
         		lines.append(line)
 	for l in lines:
 		print("\nAttacking: " + domain + " using " + l)
-		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + """>> valid_users.txt""" )
+		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + " -o valid_users.txt" )
 
 def invokeFormat():
 	os.system("""cat valid_users.txt | cut -d " " -f8 > valid_users2.txt""")
