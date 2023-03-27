@@ -40,7 +40,7 @@ def invokeKerbrute():
         		lines.append(line)
 	outputlist = ['a', 'b', 'c', 'd', 'e']
 	for l, o in zip(range(len(lines)), outputlist):
-		print("\nAttacking: " + domain + " using " + l)
+		print("\nAttacking: " + domain + " using " + str(l))
 		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + " -o " + o + '.txt' )
 
 def invokeFormat():
