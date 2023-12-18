@@ -44,6 +44,17 @@ def downloadKerbrute():
     if kerbrute_filename in os.listdir('.'):
         subprocess.run(['chmod', '+x', kerbrute_filename])
 
+def countdownTimer(duration):
+    while duration:
+        hours, remainder = divmod(duration, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        timer = "{:02}:{:02}:{:02}".format(hours, minutes, seconds)
+        print("\r" + timer, end="")
+        time.sleep(1)
+        duration -= 1
+    print("\rCountdown finished. Proceeding to next password.")
+
+
 def invokeKerbrute(domain, dc_ip=None, custom_ulist=None):
     userlists = [custom_ulist] if custom_ulist else [file for file in os.listdir('.') if file.endswith('.txt')]
     total_userlists = len(userlists)
@@ -117,7 +128,7 @@ def passwordSpray(domain, passlist, dc_ip=None):
             print(Fore.GREEN + f"Successful spray: {spray}")
 
         print(Fore.YELLOW + "Waiting for 2 hours before the next attempt...")
-        time.sleep(7200)  # Sleep for 2 hours (7200 seconds)
+        countdownTimer(7200)  # 2 hours countdown
 
 def main():
     parser = argparse.ArgumentParser(description='Kerbrute User Enumeration and Password Spray Script')
