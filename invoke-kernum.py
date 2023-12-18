@@ -44,12 +44,13 @@ def downloadKerbrute():
     if kerbrute_filename in os.listdir('.'):
         subprocess.run(['chmod', '+x', kerbrute_filename])
 
-def invokeKerbrute(domain, dc_ip=None):
-    print(Fore.GREEN + "Executing kerbrute username enumeration against: " + domain + "\n")
-    userlists = [file for file in os.listdir('.') if file.endswith('.txt')]
+def invokeKerbrute(domain, dc_ip=None, custom_ulist=None):
+    userlists = [custom_ulist] if custom_ulist else [file for file in os.listdir('.') if file.endswith('.txt')]
     total_userlists = len(userlists)
     enumerated = 0
     unique_usernames = set()
+
+    file_mode = 'a' if os.path.exists('validated_users.txt') else 'w'
 
     for userlist in userlists:
         print(Fore.BLUE + f"Using {userlist} to enumerate {domain}")
@@ -68,7 +69,7 @@ def invokeKerbrute(domain, dc_ip=None):
         enumerated += 1
         printProgressBar(enumerated, total_userlists, prefix='Progress:', length=50)
 
-    with open('validated_users.txt', 'w') as validated_users_file:
+    with open('validated_users.txt', file_mode) as validated_users_file:
         for username in unique_usernames:
             validated_users_file.write(username + '\n')
 
@@ -124,11 +125,17 @@ def main():
     parser.add_argument('--dc-ip', help='IP address of the Domain Controller')
     parser.add_argument('--spray', action='store_true', help='Enable password spraying')
     parser.add_argument('--passlist', help='Path to the password list for spraying')
+    parser.add_argument('--custom-ulist', help='Path to a custom userlist for Kerbrute')
     args = parser.parse_args()
 
     printBanner()
     downloadKerbrute()
-    invokeKerbrute(args.domain, args.dc_ip)
+
+    if args.custom_ulist:
+        invokeKerbrute(args.domain, args.dc_ip, args.custom_ulist)
+    else:
+        invokeKerbrute(args.domain, args.dc_ip)
+
     removeDuplicates()
 
     if args.spray:
