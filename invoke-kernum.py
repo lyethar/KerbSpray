@@ -30,35 +30,50 @@ def downloadKerbrute():
         "https://raw.githubusercontent.com/insidetrust/statistically-likely-usernames/master/service-accounts.txt"
     ]
 
-    if not os.path.exists(kerbrute_filename):
-        subprocess.run(['wget', kerbrute_url])
-        subprocess.run(['chmod', '+x', kerbrute_filename])
+    urls_to_download = [kerbrute_url] + userlists_urls
+    total_urls = len(urls_to_download)
+    downloaded = 0
 
-    for url in userlists_urls:
+    for url in urls_to_download:
         filename = url.split('/')[-1]
         if not os.path.exists(filename):
-            subprocess.run(['wget', url])
+            subprocess.run(['wget', '-q', url])  # '-q' option for quiet mode
+            downloaded += 1
+            printProgressBar(downloaded, total_urls, prefix='Progress:', length=50)
+
+    if kerbrute_filename in os.listdir('.'):
+        subprocess.run(['chmod', '+x', kerbrute_filename])
 
 def invokeKerbrute(domain, dc_ip=None):
     print(Fore.GREEN + "Executing kerbrute username enumeration against: " + domain + "\n")
     userlists = [file for file in os.listdir('.') if file.endswith('.txt')]
-    
+    total_userlists = len(userlists)
+    enumerated = 0
+    unique_usernames = set()
+
+    for userlist in userlists:
+        print(Fore.BLUE + f"Using {userlist} to enumerate {domain}")
+        command = ['./kerbrute_linux_amd64', 'userenum', '-d', domain, userlist]
+        if dc_ip:
+            command.extend(['--dc', dc_ip])
+
+        result = subprocess.run(command, capture_output=True, text=True)
+        valid_usernames = re.findall(r'\[\+\] VALID USERNAME:\s+([^\s]+)', result.stdout)
+        unique_usernames.update(valid_usernames)
+
+        if "Couldn't find any KDCs for realm" in result.stderr:
+            print(Fore.RED + f"Error: Couldn't find any KDCs for realm {domain}. Please specify a Domain Controller with --dc-ip.\n")
+            return
+
+        enumerated += 1
+        printProgressBar(enumerated, total_userlists, prefix='Progress:', length=50)
+
     with open('validated_users.txt', 'w') as validated_users_file:
-        for userlist in userlists:
-            print(Fore.BLUE + f"Using {userlist} to enumerate {domain}")
-            command = ['./kerbrute_linux_amd64', 'userenum', '-d', domain, userlist]
-            if dc_ip:
-                command.extend(['--dc', dc_ip])
+        for username in unique_usernames:
+            validated_users_file.write(username + '\n')
 
-            result = subprocess.run(command, capture_output=True, text=True)
-            valid_usernames = re.findall(r'\[\+\] VALID USERNAME:\s+([^\s]+)', result.stdout)
+    print(Fore.GREEN + f"\nTotal unique usernames enumerated: {len(unique_usernames)}")
 
-            for username in valid_usernames:
-                validated_users_file.write(username + '\n')
-
-            if "Couldn't find any KDCs for realm" in result.stderr:
-                print(Fore.RED + f"Error: Couldn't find any KDCs for realm {domain}. Please specify a Domain Controller with --dc-ip.\n")
-                return
 
 def removeDuplicates():
     with open('validated_users.txt', 'r') as file:
@@ -66,6 +81,16 @@ def removeDuplicates():
 
     with open('validated_users.txt', 'w') as file:
         file.writelines(unique_usernames)
+
+def printProgressBar(iteration, total, prefix='', suffix='Complete', length=100, fill='█', printEnd="\r"):
+    percent = ("{0:.1f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
 
 def passwordSpray(domain, passlist, dc_ip=None):
     with open(passlist, 'r') as file:
