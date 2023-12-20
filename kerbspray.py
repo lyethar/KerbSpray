@@ -10,12 +10,12 @@ from colorama import Fore, Style
 # Define Banner
 def printBanner():
     print(Fore.YELLOW + """
-  _____                 _
-  \_   \_ ____   _____ | | _____        /\ /\___ _ __ _ __  _   _ _ __ ___
-   / /\/ '_ \ \ / / _ \| |/ / _ \_____ / //_/ _ \ '__| '_ \| | | | '_ ` _ \
-/\/ /_ | | | \ V / (_) |   <  __/_____/ __ \  __/ |  | | | | |_| | | | | | |
-\____/ |_| |_|\_/ \___/|_|\_\___|     \/  \/\___|_|  |_| |_|\__,_|_| |_| |_|
-    """)
+     dBP dBP     dBBBP    dBBBBBb    dBBBBb  .dBBBBP   dBBBBBb   dBBBBBb  dBBBBBb dBP dBP
+    dBP.d8P                   dBP       dBP  BP            dB'       dBP       BB    dBP 
+   dBBBBP'     dBBP       dBBBBK    dBBBK'   `BBBBb    dBBBP'    dBBBBK    dBP BB   dBP  
+  dBP BB      dBP        dBP  BB   dB' db       dBP   dBP       dBP  BB   dBP  BB  dBP   
+ dBP dB'     dBBBBP     dBP  dB'  dBBBBP'  dBBBBP'   dBP       dBP  dB'  dBBBBBBB dBP    
+                                                                                         """)
     print(Style.RESET_ALL)
 
 def downloadKerbrute():
