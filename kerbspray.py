@@ -132,27 +132,29 @@ def main():
     parser.add_argument('-d', '--domain', required=True, help='Domain to enumerate')
     parser.add_argument('--dc-ip', help='IP address of the Domain Controller')
     parser.add_argument('--spray', action='store_true', help="Skip enumeration and perform password spray")
-    parser.add_argument('--passlist', help='Path to the password list for spraying')
-    parser.add_argument('--custom-ulist', help='Path to a custom userlist for Kerbrute')
+    parser.add_argument('--passlist', help='Path to the password list for spraying', required='--spray' in sys.argv)  # Require passlist if --spray is used
+    parser.add_argument('--custom-ulist', help='Path to a custom userlist for Kerbrute', required='--spray' in sys.argv)  # Require custom-ulist if --spray is used
     args = parser.parse_args()
 
     printBanner()
     downloadKerbrute()
 
-    if args.custom_ulist:
-        invokeKerbrute(args.domain, args.dc_ip, args.custom_ulist)
-    else:
-        invokeKerbrute(args.domain, args.dc_ip)
-
-
-    removeDuplicates()
-
+    # Skip enumeration if --spray is used and directly spray passwords
     if args.spray:
-        if not args.passlist:
-            print(Fore.RED + "Password list is required for password spraying. Please specify with --passlist.")
-            return
-        passwordSpray(args.domain, args.passlist, args.custom_ulist, args.dc_ip)
+        if args.passlist and args.custom_ulist:  # Ensuring both required arguments are provided
+            passwordSpray(args.domain, args.passlist, args.custom_ulist, args.dc_ip)
+    else:
+        # Proceed with user enumeration if --spray is not specified
+        if args.custom_ulist:
+            invokeKerbrute(args.domain, args.dc_ip, args.custom_ulist)
+        else:
+            # If custom_ulist is not provided, invokeKerbrute without it (which will use default lists)
+            invokeKerbrute(args.domain, args.dc_ip)
 
+        removeDuplicates()  # This can be moved or conditioned based on your workflow
+
+if __name__ == '__main__':
+    main()
 
 if __name__ == '__main__':
     main()
