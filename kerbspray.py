@@ -4,6 +4,7 @@ import os
 import re
 import time
 from colorama import Fore, Style
+import sys
 
 # Define Banner
 def printBanner():
